@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo &amp; メモ</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#F7F6F3;--surface:#FFFFFF;--border:#E5E3DE;--border-strong:#CCCAC4;
+  --text:#1A1916;--text-sec:#6B6962;--text-ter:#A8A49E;--accent:#1A1916;
+  --danger:#C0392B;--warn:#B7770D;--info:#1A56A4;
+  --radius:10px;--radius-sm:6px;--shadow:0 1px 4px rgba(0,0,0,0.08);
+  --font:'Hiragino Kaku Gothic ProN','Hiragino Sans',Meiryo,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:100vh;padding:24px 16px}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:22px;font-weight:700;letter-spacing:-.5px;margin-bottom:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h1 span{font-size:12px;font-weight:400;color:var(--text-sec);letter-spacing:0}
+input,select,button,textarea{font-family:var(--font);font-size:14px;outline:none}
+input[type=text],input[type=email],input[type=password],input[type=date],select,textarea{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:7px 10px;color:var(--text);transition:border-color .15s}
+input[type=text]:focus,input[type=email]:focus,input[type=password]:focus,
+input[type=date]:focus,select:focus,textarea:focus{border-color:var(--border-strong)}
+button{cursor:pointer}
+/* ── Auth ── */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:70vh}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:100%;max-width:360px;box-shadow:var(--shadow)}
+.auth-card h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.auth-card p{font-size:13px;color:var(--text-sec);margin-bottom:24px}
+.auth-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.auth-field label{font-size:12px;font-weight:500;color:var(--text-sec)}
+.auth-field input{width:100%}
+.auth-btn{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:500;margin-top:4px}
+.auth-btn:hover{opacity:.85}
+.auth-switch{text-align:center;margin-top:16px;font-size:13px;color:var(--text-sec)}
+.auth-switch button{background:none;border:none;color:var(--info);text-decoration:underline;cursor:pointer;font-size:13px}
+.auth-err{background:#FEE2E2;color:#991B1B;font-size:12px;padding:8px 10px;border-radius:var(--radius-sm);margin-bottom:12px;display:none}
+.auth-ok{background:#DCFCE7;color:#166534;font-size:12px;padding:8px 10px;border-radius:var(--radius-sm);margin-bottom:12px;display:none}
+/* ── App ── */
+#app-screen{display:none}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px}
+.topbar h1{margin-bottom:0}
+.user-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-sec)}
+.logout-btn{background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px;font-size:12px;color:var(--text-sec)}
+.logout-btn:hover{background:var(--bg)}
+/* ── Loading ── */
+#loading-bar{display:none;font-size:13px;color:var(--text-sec);margin-bottom:12px;
+  padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm)}
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:4px}
+.tab{flex:1;padding:8px;font-size:14px;font-weight:500;border:none;background:transparent;color:var(--text-sec);border-radius:var(--radius-sm);transition:all .15s}
+.tab.active{background:var(--accent);color:#fff}
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center}
+.stat-n{font-size:22px;font-weight:700;line-height:1}
+.stat-l{font-size:11px;color:var(--text-sec);margin-top:4px}
+/* Category manager */
+.cat-mgr{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.cat-mgr-title{font-size:12px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.cat-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.cat-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 8px 3px 10px;border-radius:20px;font-weight:500}
+.cat-chip button{background:transparent;border:none;cursor:pointer;font-size:13px;padding:0;line-height:1;opacity:.5}
+.cat-chip button:hover{opacity:1}
+.cat-add-row{display:flex;gap:6px}
+.cat-add-row input[type=text]{flex:1}
+.cat-add-row input[type=color]{width:36px;height:34px;padding:2px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid var(--border)}
+.cat-add-row button{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 12px;font-size:13px;display:flex;align-items:center;gap:4px}
+.toggle-link{font-size:12px;color:var(--text-sec);cursor:pointer;background:none;border:none;padding:0;text-decoration:underline;margin-bottom:10px;display:inline-block}
+/* Add row */
+.add-row{display:flex;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.add-row input[type=text]{flex:1;min-width:160px}
+.add-row input[type=date]{width:140px}
+.add-row select{width:130px}
+.add-row .add-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 14px;font-size:14px;display:flex;align-items:center;gap:4px;white-space:nowrap}
+/* Sort + Filter */
+.sort-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sort-row label{font-size:13px;color:var(--text-sec);white-space:nowrap}
+.sort-row select{width:auto}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-sec);cursor:pointer;transition:all .15s}
+.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* Todo items */
+.todo-item{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:default;transition:box-shadow .15s}
+.todo-item:hover{box-shadow:var(--shadow)}
+.todo-item.done .todo-text{text-decoration:line-through;color:var(--text-ter)}
+.todo-item.dragging{opacity:.4;cursor:grabbing}
+.todo-item.drag-over{border-color:var(--accent);border-width:2px}
+.drag-handle{color:var(--text-ter);font-size:16px;flex-shrink:0;cursor:grab}
+.todo-check{width:17px;height:17px;cursor:pointer;flex-shrink:0;accent-color:var(--accent)}
+.todo-text{flex:1;font-size:14px;line-height:1.5;word-break:break-all}
+.todo-due{font-size:11px;color:var(--text-sec);flex-shrink:0;white-space:nowrap}
+.todo-due.overdue{color:var(--danger);font-weight:500}
+.todo-due.today{color:var(--warn);font-weight:500}
+.todo-tag{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:500;flex-shrink:0;white-space:nowrap}
+.todo-del{background:transparent;border:none;cursor:pointer;color:var(--text-ter);font-size:15px;padding:0 2px;flex-shrink:0;transition:color .15s}
+.todo-del:hover{color:var(--danger)}
+.empty{text-align:center;padding:2.5rem;color:var(--text-ter);font-size:14px}
+/* Notes */
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.note-card{border-radius:var(--radius);padding:13px;min-height:115px;display:flex;flex-direction:column;gap:8px;border:1px solid transparent;transition:box-shadow .15s}
+.note-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+.note-card textarea{background:transparent;border:none;resize:none;font-size:13px;line-height:1.6;flex:1;width:100%;color:var(--text)}
+.note-card textarea::placeholder{color:rgba(0,0,0,.3)}
+.note-footer{display:flex;justify-content:space-between;align-items:center}
+.note-color-row{display:flex;gap:4px}
+.note-color-dot{width:14px;height:14px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .1s}
+.note-color-dot.selected{border-color:rgba(0,0,0,.4)}
+.note-del-btn{background:transparent;border:none;cursor:pointer;font-size:15px;color:rgba(0,0,0,.3);padding:0;transition:color .15s}
+.note-del-btn:hover{color:rgba(0,0,0,.6)}
+.add-note-btn{display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px dashed var(--border-strong);border-radius:var(--radius);min-height:115px;background:transparent;cursor:pointer;color:var(--text-sec);font-size:14px;width:100%;transition:background .15s}
+.add-note-btn:hover{background:var(--surface)}
+.panel{display:none}.panel.active{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── ログイン画面 ── -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <h2 id="auth-title">ログイン</h2>
+      <p id="auth-sub">メールアドレスとパスワードでログイン</p>
+      <div class="auth-err" id="auth-err"></div>
+      <div class="auth-ok" id="auth-ok"></div>
+      <div class="auth-field">
+        <label>メールアドレス</label>
+        <input type="email" id="auth-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')authSubmit()">
+      </div>
+      <div class="auth-field" id="auth-pw-field">
+        <label>パスワード</label>
+        <input type="password" id="auth-pw" placeholder="6文字以上" onkeydown="if(event.key==='Enter')authSubmit()">
+      </div>
+      <button class="auth-btn" onclick="authSubmit()" id="auth-submit-btn">ログイン</button>
+      <div class="auth-switch">
+        <span id="auth-switch-text">アカウントをお持ちでない方は</span>
+        <button onclick="toggleAuthMode()" id="auth-mode-btn">新規登録</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── アプリ画面 ── -->
+  <div id="app-screen">
+    <div class="topbar">
+      <h1>
+        <i class="ti ti-layout-board-split" aria-hidden="true"></i>
+        Todo &amp; メモ
+      </h1>
+      <div class="user-row">
+        <i class="ti ti-user-circle" style="font-size:16px" aria-hidden="true"></i>
+        <span id="user-email-label"></span>
+        <button class="logout-btn" onclick="logout()">ログアウト</button>
+      </div>
+    </div>
+    <div id="loading-bar">
+      <i class="ti ti-loader-2" style="font-size:14px;vertical-align:-2px;margin-right:5px" aria-hidden="true"></i>読み込み中…
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('todo')"><i class="ti ti-checkbox" style="font-size:15px;vertical-align:-2px;margin-right:5px" aria-hidden="true"></i>Todo</button>
+      <button class="tab" onclick="switchTab('memo')"><i class="ti ti-note" style="font-size:15px;vertical-align:-2px;margin-right:5px" aria-hidden="true"></i>メモ</button>
+    </div>
+
+    <div id="panel-todo" class="panel active">
+      <div class="stats">
+        <div class="stat"><div class="stat-n" id="stat-total">0</div><div class="stat-l">合計</div></div>
+        <div class="stat"><div class="stat-n" id="stat-done">0</div><div class="stat-l">完了</div></div>
+        <div class="stat"><div class="stat-n" id="stat-left">0</div><div class="stat-l">残り</div></div>
+      </div>
+      <button class="toggle-link" onclick="toggleCatMgr()">
+        <i class="ti ti-tag" style="font-size:13px;vertical-align:-1px;margin-right:3px" aria-hidden="true"></i>
+        <span id="cat-mgr-label">カテゴリを管理</span>
+      </button>
+      <div class="cat-mgr" id="cat-mgr" style="display:none">
+        <div class="cat-mgr-title">カテゴリ管理</div>
+        <div class="cat-list" id="cat-list"></div>
+        <div class="cat-add-row">
+          <input type="text" id="cat-name-input" placeholder="カテゴリ名" maxlength="12">
+          <input type="color" id="cat-color-input" value="#378ADD" title="色を選択">
+          <button onclick="addCategory()"><i class="ti ti-plus" aria-hidden="true"></i> 追加</button>
+        </div>
+      </div>
+      <div class="add-row">
+        <select id="todo-tag"></select>
+        <input type="text" id="todo-input" placeholder="新しいタスクを追加…" onkeydown="if(event.key==='Enter')addTodo()">
+        <input type="date" id="todo-due">
+        <button class="add-btn" onclick="addTodo()"><i class="ti ti-plus" aria-hidden="true"></i> 追加</button>
+      </div>
+      <div class="sort-row">
+        <label>並び替え：</label>
+        <select id="sort-key" onchange="renderTodos()">
+          <option value="manual">手動（ドラッグ）</option>
+          <option value="due">期日順</option>
+          <option value="tag">カテゴリ順</option>
+          <option value="done">完了→未完了</option>
+        </select>
+      </div>
+      <div class="filter-row" id="filter-row"></div>
+      <div id="todo-list"></div>
+    </div>
+
+    <div id="panel-memo" class="panel">
+      <div class="notes-grid" id="notes-grid"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+// ── Supabase 設定 ────────────────────────────────────
+const SB_URL = 'https://smenucbyjbtanalyejaq.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtZW51Y2J5amJ0YW5hbHllamFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMTE3OTgsImV4cCI6MjA5NzU4Nzc5OH0.7kWePpU56UYaUEzZMvwBXISTwpVMJK7z02L0HYxUKKw';
+
+let accessToken = null;
+
+function authHeaders(extra){
+  return {
+    'Content-Type':'application/json',
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + (accessToken || SB_KEY),
+    ...extra
+  };
+}
+
+async function sbFetch(path, opts={}){
+  const res = await fetch(SB_URL+'/rest/v1/'+path, {
+    headers: authHeaders(opts.headers||{}),
+    method: opts.method||'GET',
+    body: opts.body
+  });
+  if(res.status===204) return null;
+  const data = await res.json();
+  if(!res.ok){ console.error('Supabase error:', data); return null; }
+  return data;
+}
+
+// ── 認証 ─────────────────────────────────────────────
+let authMode = 'login'; // 'login' | 'signup'
+
+function toggleAuthMode(){
+  authMode = authMode==='login' ? 'signup' : 'login';
+  const isLogin = authMode==='login';
+  document.getElementById('auth-title').textContent = isLogin ? 'ログイン' : '新規登録';
+  document.getElementById('auth-sub').textContent = isLogin ? 'メールアドレスとパスワードでログイン' : 'アカウントを作成してデータを同期';
+  document.getElementById('auth-submit-btn').textContent = isLogin ? 'ログイン' : 'アカウント作成';
+  document.getElementById('auth-switch-text').textContent = isLogin ? 'アカウントをお持ちでない方は' : 'すでにアカウントをお持ちの方は';
+  document.getElementById('auth-mode-btn').textContent = isLogin ? '新規登録' : 'ログインへ';
+  document.getElementById('auth-err').style.display='none';
+  document.getElementById('auth-ok').style.display='none';
+}
+
+function showAuthErr(msg){ const el=document.getElementById('auth-err'); el.textContent=msg; el.style.display='block'; document.getElementById('auth-ok').style.display='none'; }
+function showAuthOk(msg){ const el=document.getElementById('auth-ok'); el.textContent=msg; el.style.display='block'; document.getElementById('auth-err').style.display='none'; }
+
+async function authSubmit(){
+  const email = document.getElementById('auth-email').value.trim();
+  const pw    = document.getElementById('auth-pw').value;
+  if(!email){ showAuthErr('メールアドレスを入力してください'); return; }
+  if(!pw || pw.length<6){ showAuthErr('パスワードは6文字以上で入力してください'); return; }
+
+  const endpoint = authMode==='login'
+    ? SB_URL+'/auth/v1/token?grant_type=password'
+    : SB_URL+'/auth/v1/signup';
+
+  const btn = document.getElementById('auth-submit-btn');
+  btn.textContent='処理中…'; btn.disabled=true;
+
+  try{
+    const res = await fetch(endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_KEY},
+      body: JSON.stringify({email, password:pw})
+    });
+    const data = await res.json();
+    if(!res.ok){
+      showAuthErr(data.error_description || data.msg || 'エラーが発生しました');
+      return;
+    }
+    if(authMode==='signup' && !data.access_token){
+      showAuthOk('確認メールを送りました。メールのリンクをクリックしてからログインしてください。');
+      return;
+    }
+    // ログイン成功
+    accessToken = data.access_token;
+    localStorage.setItem('sb_token', accessToken);
+    document.getElementById('user-email-label').textContent = data.user?.email || email;
+    showApp();
+  }catch(e){
+    showAuthErr('通信エラーが発生しました: '+e.message);
+  }finally{
+    btn.textContent = authMode==='login' ? 'ログイン' : 'アカウント作成';
+    btn.disabled=false;
+  }
+}
+
+async function logout(){
+  await fetch(SB_URL+'/auth/v1/logout', {
+    method:'POST', headers:authHeaders()
+  });
+  accessToken=null;
+  localStorage.removeItem('sb_token');
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  // リセット
+  categories=[]; todos=[]; notes=[];
+  document.getElementById('auth-email').value='';
+  document.getElementById('auth-pw').value='';
+}
+
+async function tryRestoreSession(){
+  const token = localStorage.getItem('sb_token');
+  if(!token) return false;
+  // トークンの有効性確認
+  const res = await fetch(SB_URL+'/auth/v1/user', {
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+token}
+  });
+  if(!res.ok){ localStorage.removeItem('sb_token'); return false; }
+  const user = await res.json();
+  accessToken = token;
+  document.getElementById('user-email-label').textContent = user.email || '';
+  return true;
+}
+
+function showApp(){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  init();
+}
+
+// ── 定数 ──────────────────────────────────────────────
+const NOTE_COLORS=[
+  {bg:'#FFFDE7',border:'#F0D060'},{bg:'#E8F5E9',border:'#81C784'},
+  {bg:'#E3F2FD',border:'#64B5F6'},{bg:'#FCE4EC',border:'#F48FB1'},
+  {bg:'#F3E5F5',border:'#CE93D8'},{bg:'#FBE9E7',border:'#FFAB91'},
+];
+const DEFAULT_CATS=[
+  {id:'work',label:'仕事',color:'#378ADD'},
+  {id:'personal',label:'プライベート',color:'#1D9E75'},
+  {id:'idea',label:'アイデア',color:'#BA7517'},
+  {id:'other',label:'その他',color:'#888780'},
+];
+
+// ── State ─────────────────────────────────────────────
+let categories=[], todos=[], notes=[];
+let filter='all', catMgrOpen=false, dragSrcIdx=null;
+let noteDebounceTimers={};
+
+// ── Utils ─────────────────────────────────────────────
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hexToRgb(h){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`${r},${g},${b}`;}
+function tagStyle(c){return`background:rgba(${hexToRgb(c)},0.15);color:${c}`;}
+function showLoading(v){document.getElementById('loading-bar').style.display=v?'block':'none';}
+
+// ── Tabs ──────────────────────────────────────────────
+function switchTab(t){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['todo','memo'][i]===t));
+  document.querySelectorAll('.panel').forEach(el=>el.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+// ── カテゴリ ──────────────────────────────────────────
+function toggleCatMgr(){
+  catMgrOpen=!catMgrOpen;
+  document.getElementById('cat-mgr').style.display=catMgrOpen?'block':'none';
+  document.getElementById('cat-mgr-label').textContent=catMgrOpen?'閉じる':'カテゴリを管理';
+}
+async function addCategory(){
+  const name=document.getElementById('cat-name-input').value.trim();
+  const color=document.getElementById('cat-color-input').value;
+  if(!name) return;
+  const id='cat_'+Date.now();
+  const row = await sbFetch('categories?select=*',{method:'POST',headers:{'Prefer':'return=representation'},
+    body:JSON.stringify({id,label:name,color,position:categories.length,user_id:null})});
+  const item = Array.isArray(row)?row[0]:row;
+  if(item){ categories.push({id:item.id,label:item.label,color:item.color}); document.getElementById('cat-name-input').value=''; }
+  renderCatMgr();renderTagSelect();renderFilters();renderTodos();
+}
+async function deleteCategory(id){
+  if(categories.length<=1) return;
+  const fallback=categories.find(c=>c.id!==id);
+  await sbFetch('todos?tag=eq.'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({tag:fallback.id})});
+  await sbFetch('categories?id=eq.'+encodeURIComponent(id),{method:'DELETE'});
+  categories=categories.filter(c=>c.id!==id);
+  todos.forEach(t=>{if(t.tag===id)t.tag=fallback.id;});
+  renderCatMgr();renderTagSelect();renderFilters();renderTodos();
+}
+function renderCatMgr(){
+  document.getElementById('cat-list').innerHTML=categories.map(c=>`
+    <span class="cat-chip" style="${tagStyle(c.color)}">${escHtml(c.label)}
+      ${categories.length>1?`<button onclick="deleteCategory('${c.id}')"><i class="ti ti-x"></i></button>`:''}
+    </span>`).join('');
+}
+function renderTagSelect(){
+  document.getElementById('todo-tag').innerHTML=categories.map(c=>`<option value="${c.id}">${escHtml(c.label)}</option>`).join('');
+}
+
+// ── フィルター ────────────────────────────────────────
+function renderFilters(){
+  document.getElementById('filter-row').innerHTML=
+    [{id:'all',label:'すべて'},{id:'active',label:'未完了'},{id:'done',label:'完了済み'}]
+    .concat(categories)
+    .map(c=>`<button class="filter-btn${filter===c.id?' active':''}" onclick="setFilter('${c.id}')">${escHtml(c.label)}</button>`).join('');
+}
+function setFilter(f){filter=f;renderFilters();renderTodos();}
+
+// ── 期日ラベル ────────────────────────────────────────
+function getDueLabel(due,done){
+  if(!due) return'';
+  const today=new Date();today.setHours(0,0,0,0);
+  const d=new Date(due+'T00:00:00');
+  const diff=Math.round((d-today)/(864e5));
+  if(done) return`<span class="todo-due">${due}</span>`;
+  if(diff<0) return`<span class="todo-due overdue"><i class="ti ti-alert-circle" style="font-size:12px;vertical-align:-1px"></i> ${Math.abs(diff)}日超過</span>`;
+  if(diff===0) return`<span class="todo-due today"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px"></i> 今日まで</span>`;
+  if(diff===1) return`<span class="todo-due today">明日まで</span>`;
+  return`<span class="todo-due">${due}</span>`;
+}
+
+// ── Todo CRUD ─────────────────────────────────────────
+async function addTodo(){
+  const inp=document.getElementById('todo-input');
+  const tag=document.getElementById('todo-tag').value;
+  const due=document.getElementById('todo-due').value||null;
+  const text=inp.value.trim();
+  if(!text) return;
+  const row=await sbFetch('todos?select=*',{method:'POST',headers:{'Prefer':'return=representation'},
+    body:JSON.stringify({text,tag,due,done:false,position:todos.length})});
+  const item=Array.isArray(row)?row[0]:row;
+  if(item){todos.push({id:item.id,text:item.text,tag:item.tag,due:item.due,done:item.done,position:item.position});inp.value='';}
+  renderTodos();
+}
+async function toggleTodo(id){
+  const t=todos.find(x=>x.id===id);if(!t)return;
+  t.done=!t.done;
+  await sbFetch('todos?id=eq.'+id,{method:'PATCH',body:JSON.stringify({done:t.done})});
+  renderTodos();
+}
+async function deleteTodo(id){
+  todos=todos.filter(x=>x.id!==id);
+  await sbFetch('todos?id=eq.'+id,{method:'DELETE'});
+  renderTodos();
+}
+function getSortedTodos(list){
+  const key=document.getElementById('sort-key').value;
+  if(key==='manual') return list;
+  const copy=[...list];
+  if(key==='due') copy.sort((a,b)=>{if(!a.due&&!b.due)return 0;if(!a.due)return 1;if(!b.due)return-1;return a.due<b.due?-1:1;});
+  if(key==='tag') copy.sort((a,b)=>a.tag.localeCompare(b.tag));
+  if(key==='done') copy.sort((a,b)=>Number(a.done)-Number(b.done));
+  return copy;
+}
+function renderTodos(){
+  const list=document.getElementById('todo-list');
+  let visible=todos.filter(t=>{
+    if(filter==='all')return true;if(filter==='active')return!t.done;if(filter==='done')return t.done;return t.tag===filter;
+  });
+  const sorted=getSortedTodos(visible);
+  const total=todos.length, done=todos.filter(x=>x.done).length;
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('stat-left').textContent=total-done;
+  if(!sorted.length){list.innerHTML='<div class="empty"><i class="ti ti-checkbox" style="font-size:28px;display:block;margin:0 auto 8px"></i>タスクがありません</div>';return;}
+  const isManual=document.getElementById('sort-key').value==='manual';
+  list.innerHTML=sorted.map((t,i)=>{
+    const cat=categories.find(c=>c.id===t.tag)||categories[0]||{color:'#888',label:'?'};
+    return`<div class="todo-item${t.done?' done':''}" draggable="${isManual}" data-idx="${i}"
+      ondragstart="onDragStart(event,${i})" ondragover="onDragOver(event,${i})"
+      ondrop="onDrop(event,${i})" ondragend="onDragEnd()">
+      ${isManual?`<span class="drag-handle"><i class="ti ti-grip-vertical"></i></span>`:''}
+      <input type="checkbox" class="todo-check" ${t.done?'checked':''} onchange="toggleTodo(${t.id})">
+      <span class="todo-text">${escHtml(t.text)}</span>
+      ${getDueLabel(t.due,t.done)}
+      <span class="todo-tag" style="${tagStyle(cat.color)}">${escHtml(cat.label)}</span>
+      <button class="todo-del" onclick="deleteTodo(${t.id})"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
+// ── ドラッグ ──────────────────────────────────────────
+function onDragStart(e,idx){dragSrcIdx=idx;e.currentTarget.classList.add('dragging');}
+function onDragOver(e,idx){e.preventDefault();document.querySelectorAll('.todo-item').forEach(el=>el.classList.remove('drag-over'));e.currentTarget.classList.add('drag-over');}
+async function onDrop(e,idx){
+  e.preventDefault();
+  if(dragSrcIdx===null||dragSrcIdx===idx) return;
+  if(document.getElementById('sort-key').value!=='manual') return;
+  let visible=todos.filter(t=>{if(filter==='all')return true;if(filter==='active')return!t.done;if(filter==='done')return t.done;return t.tag===filter;});
+  const moved=visible[dragSrcIdx], target=visible[idx];
+  const mi=todos.indexOf(moved); todos.splice(mi,1);
+  const ni=todos.indexOf(target); todos.splice(idx>dragSrcIdx?ni+1:ni,0,moved);
+  todos.forEach((t,i)=>t.position=i);
+  dragSrcIdx=null; renderTodos();
+  await Promise.all(todos.map(t=>sbFetch('todos?id=eq.'+t.id,{method:'PATCH',body:JSON.stringify({position:t.position})})));
+}
+function onDragEnd(){dragSrcIdx=null;document.querySelectorAll('.todo-item').forEach(el=>el.classList.remove('dragging','drag-over'));}
+
+// ── Notes ─────────────────────────────────────────────
+async function addNote(){
+  const row=await sbFetch('memos?select=*',{method:'POST',headers:{'Prefer':'return=representation'},
+    body:JSON.stringify({text:'',color_idx:0,position:notes.length})});
+  const item=Array.isArray(row)?row[0]:row;
+  if(item) notes.push({id:item.id,text:item.text,colorIdx:item.color_idx,position:item.position});
+  renderNotes();
+  setTimeout(()=>{const a=document.querySelectorAll('.note-card textarea');if(a.length)a[a.length-1].focus();},50);
+}
+async function deleteNote(id){
+  notes=notes.filter(x=>x.id!==id);
+  await sbFetch('memos?id=eq.'+id,{method:'DELETE'});
+  renderNotes();
+}
+async function setNoteColor(id,ci){
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  n.colorIdx=ci;
+  await sbFetch('memos?id=eq.'+id,{method:'PATCH',body:JSON.stringify({color_idx:ci})});
+  renderNotes();
+}
+function updateNote(id,val){
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  n.text=val;
+  clearTimeout(noteDebounceTimers[id]);
+  noteDebounceTimers[id]=setTimeout(()=>{
+    sbFetch('memos?id=eq.'+id,{method:'PATCH',body:JSON.stringify({text:val})});
+  },600);
+}
+function renderNotes(){
+  const grid=document.getElementById('notes-grid');
+  grid.innerHTML=notes.map(n=>{
+    const c=NOTE_COLORS[n.colorIdx]||NOTE_COLORS[0];
+    const dots=NOTE_COLORS.map((cl,i)=>`<span class="note-color-dot${n.colorIdx===i?' selected':''}" style="background:${cl.bg};border-color:${cl.border}" onclick="setNoteColor(${n.id},${i})"></span>`).join('');
+    return`<div class="note-card" style="background:${c.bg};border-color:${c.border}">
+      <textarea rows="4" placeholder="メモを入力…" oninput="updateNote(${n.id},this.value)">${escHtml(n.text)}</textarea>
+      <div class="note-footer"><div class="note-color-row">${dots}</div>
+      <button class="note-del-btn" onclick="deleteNote(${n.id})"><i class="ti ti-trash"></i></button></div>
+    </div>`;
+  }).join('')+`<button class="add-note-btn" onclick="addNote()"><i class="ti ti-plus" style="font-size:20px"></i>メモを追加</button>`;
+}
+
+// ── 初期データロード ──────────────────────────────────
+async function init(){
+  showLoading(true);
+  try{
+    let [cats, tvs, mvs] = await Promise.all([
+      sbFetch('categories?select=*&order=position.asc'),
+      sbFetch('todos?select=*&order=position.asc'),
+      sbFetch('memos?select=*&order=position.asc'),
+    ]);
+    // 初回ログイン時：カテゴリが空ならデフォルトを投入
+    if(!cats || cats.length===0){
+      await Promise.all(DEFAULT_CATS.map((c,i)=>
+        sbFetch('categories',{method:'POST',body:JSON.stringify({...c,position:i})})
+      ));
+      cats = await sbFetch('categories?select=*&order=position.asc');
+    }
+    categories = (cats||[]).map(c=>({id:c.id,label:c.label,color:c.color}));
+    todos      = (tvs||[]).map(t=>({id:t.id,text:t.text,tag:t.tag,due:t.due,done:t.done,position:t.position}));
+    notes      = (mvs||[]).map(m=>({id:m.id,text:m.text,colorIdx:m.color_idx,position:m.position}));
+  }catch(e){console.error(e);}
+  showLoading(false);
+  renderCatMgr(); renderTagSelect(); renderFilters(); renderTodos(); renderNotes();
+}
+
+// ── 起動 ──────────────────────────────────────────────
+(async()=>{
+  const restored = await tryRestoreSession();
+  if(restored){
+    showApp();
+  } else {
+    document.getElementById('auth-screen').style.display='flex';
+  }
+})();
+</script>
+</body>
+</html>
