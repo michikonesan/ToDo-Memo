@@ -372,7 +372,7 @@ async function addCategory(){
   if(!name) return;
   const id='cat_'+Date.now();
   const row = await sbFetch('categories?select=*',{method:'POST',headers:{'Prefer':'return=representation'},
-    body:JSON.stringify({id,label:name,color,position:categories.length,user_id:null})});
+    body:JSON.stringify({id,label:name,color,position:categories.length})});
   const item = Array.isArray(row)?row[0]:row;
   if(item){ categories.push({id:item.id,label:item.label,color:item.color}); document.getElementById('cat-name-input').value=''; }
   renderCatMgr();renderTagSelect();renderFilters();renderTodos();
@@ -548,7 +548,7 @@ async function init(){
     // 初回ログイン時：カテゴリが空ならデフォルトを投入
     if(!cats || cats.length===0){
       await Promise.all(DEFAULT_CATS.map((c,i)=>
-        sbFetch('categories',{method:'POST',body:JSON.stringify({...c,position:i})})
+        sbFetch('categories?select=*',{method:'POST',headers:{'Prefer':'return=representation'},body:JSON.stringify({...c,position:i})})
       ));
       cats = await sbFetch('categories?select=*&order=position.asc');
     }
